@@ -1,0 +1,16 @@
+---
+influxdbcloud_token: "a"
+influxdbcloud_config_url: "https://us-west-2-1.aws.cloud2.influxdata.com/api/v2/telegrafs/12345"
+
+custom_users:
+  - jjaniec
+
+users_password:
+  - jjaniec
+
+packages:
+  - base-devel
+  - sudo
+  - git
+  - zsh
+  - tmux

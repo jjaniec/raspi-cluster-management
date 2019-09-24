@@ -19,11 +19,10 @@ fi;
 if [ -b ${1} ] && [ "${2}" != "" ];
 then
  DIR=$(mktemp -d)
+ echo "DIR: ${DIR}"
  fdisk -l ${1}
  cd ${DIR}
  echo "Working dir ${PWD}, using device ${1} starting in 5 seconds"
-
- wget http://os.archlinuxarm.org/os/ArchLinuxARM-rpi-${2}-latest.tar.gz
 
  fdisk ${1} <<EOF
 o
@@ -43,6 +42,8 @@ p
 w
 EOF
 
+ wget http://os.archlinuxarm.org/os/ArchLinuxARM-rpi-${2}-latest.tar.gz
+
  mkfs.vfat ${1}1
  mkfs.ext4 ${1}2
  mkdir boot
@@ -58,6 +59,9 @@ EOF
  umount boot root
  rm -rf ${DIR}
  echo "Done"
+ echo "Now, apply power & ethernet to the pi & ssh with user 'alarm'/'alarm'"
+ echo "Then run the content of remote.sh:"
+ cat remote.sh
 else
  echo "Usage: ./initArchLinuxARMsd.sh /dev/sdX imagemodel (ex for rpi4: 4, see step 5 https://archlinuxarm.org/platforms/armv8/broadcom/raspberry-pi-4)"
 fi;

@@ -1,0 +1,118 @@
+---
+- name: Add custom users
+  user:
+    name: "{{ item }}"
+    password: "{{ users_password[i] | password_hash('sha512') }}"
+    shell: /bin/zsh
+  loop: "{{ custom_users }}"
+  loop_control:
+    index_var: i
+  become: yes
+
+- name: Make sure we have a 'wheel' group
+  group:
+    name: wheel
+    state: present
+  become: yes
+
+- name: Allow 'wheel' group to have passwordless sudo
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: "^%wheel"
+    line: "%wheel ALL=(ALL) NOPASSWD: ALL"
+    validate: "visudo -cf %s"
+  become: yes
+
+- name: Add custom users to wheel group
+  user:
+    name: "{{ item }}"
+    groups: wheel
+    append: yes
+    state: present
+    createhome: yes
+  loop: "{{ custom_users }}"
+  become: yes
+
+- name: Add alarm user to wheel group
+  user:
+    name: alarm
+    groups: wheel
+    append: yes
+    state: present
+  become: yes
+
+# - name: Set up authorized keys for the deployer user
+#   authorized_key: user=deployer key="{{item}}"
+#   with_file:
+#     - /home/deployer/.ssh/id_rsa.pub
+
+- name: Clone dotfiles to /
+  git:
+    repo: https://github.com/jjaniec/dotfiles
+    dest: /dotfiles
+    force: yes
+  become: yes
+
+- name: Allow wheel group access to dotfiles
+  file:
+    path: /dotfiles
+    mode: 0774
+    owner: "{{ custom_users[0] }}"
+    group: wheel
+    state: directory
+    recurse: yes
+  become: yes
+
+- name: Create symbolic link to dotfiles/zsh/zshrc in custom_users home directories
+  file:
+    src: /dotfiles/zsh/zshrc
+    dest: "/home/{{ item }}/.zshrc"
+    state: link
+  loop: "{{ custom_users }}"
+  become: yes
+
+- name: Update owner of zshrc symlink in users home directories
+  file:
+    owner: "{{ item }}"
+    path: "/home/{{ item }}/.zshrc"
+  loop: "{{ custom_users }}"
+  become: yes
+
+- name: Add pikaur role
+  include_role:
+    name: ansible-roles/roles/pikaur
+
+- name: Add docker-ce-arch role
+  include_role:
+    name: ansible-roles/roles/docker-ce
+
+- name: Add custom users to docker group
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+    state: present
+  loop: "{{ custom_users }}"
+  become: yes
+
+- name: Add systemd telegraf monitoring service
+  template:
+    src: docker.telegraf.service.j2
+    dest: /etc/systemd/system/docker.telegraf.service
+  vars:
+    INFLUX_TOKEN: "{{ influxdbcloud_token }}"
+    INFLUX_CONFIG_URL: "{{ influxdbcloud_config_url }}"
+  become: yes
+
+- name: Pull telegraf docker image
+  shell: docker pull telegraf
+  become: yes
+
+- name: Start & enable service at boot
+  systemd:
+    name: docker.telegraf
+    state: started
+    daemon_reload: yes
+    enabled: true
+  become: yes

@@ -1,0 +1,22 @@
+[Unit]
+Description=Telegraf container
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=10
+Restart=always
+RestartSec=10s
+Type=simple
+NotifyAccess=all
+ExecStartPre=/usr/bin/docker pull telegraf
+ExecStart=/usr/bin/docker run \
+  -e "INFLUX_TOKEN={{ INFLUX_TOKEN }}" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -e HOST_PROC=/host/proc \
+  -v "/proc:/host/proc:ro" \
+  -v "/etc/hostname:/etc/hostname:ro" \
+  telegraf --config {{ INFLUX_CONFIG_URL }}
+
+[Install]
+WantedBy=multi-user.target
