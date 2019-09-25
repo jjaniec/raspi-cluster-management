@@ -16,6 +16,7 @@ ExecStart=/usr/bin/docker run \
   -e HOST_PROC=/host/proc \
   -v "/proc:/host/proc:ro" \
   -v "/etc/hostname:/etc/hostname:ro" \
+  --net=host \
   telegraf --config {{ INFLUX_CONFIG_URL }}
 
 [Install]

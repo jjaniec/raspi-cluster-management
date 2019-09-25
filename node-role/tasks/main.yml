@@ -1,4 +1,10 @@
 ---
+- name: Ensure base packages are installed
+  pacman:
+    name: "{{ packages }}"
+    state: present
+  become: yes
+
 - name: Add custom users
   user:
     name: "{{ item }}"
@@ -57,7 +63,7 @@
 - name: Allow wheel group access to dotfiles
   file:
     path: /dotfiles
-    mode: 0774
+    mode: 0755
     owner: "{{ custom_users[0] }}"
     group: wheel
     state: directory

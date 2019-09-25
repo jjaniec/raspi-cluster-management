@@ -1,5 +1,5 @@
 ---
-influxdbcloud_token: "a"
+influxdbcloud_token: "token"
 influxdbcloud_config_url: "https://us-west-2-1.aws.cloud2.influxdata.com/api/v2/telegrafs/12345"
 
 custom_users:
@@ -14,3 +14,6 @@ packages:
   - git
   - zsh
   - tmux
+  - wget
+  - nano
+  - vim
