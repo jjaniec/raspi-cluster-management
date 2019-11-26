@@ -1,4 +1,6 @@
 ---
+ANSIBLE_ROLES: "ansible-roles/roles"
+
 influxdbcloud_token: "token"
 influxdbcloud_config_url: "https://us-west-2-1.aws.cloud2.influxdata.com/api/v2/telegrafs/12345"
 
