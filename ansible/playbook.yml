@@ -1,0 +1,132 @@
+---
+- hosts: all
+  vars_files:
+    - vars/main.yml
+  tasks:
+    - include_vars:
+        dir: vars
+
+    - name: Ensure base packages are installed
+      pacman:
+        name: "{{ packages }}"
+        state: present
+      become: yes
+
+    - name: Add custom users
+      user:
+        name: "{{ item }}"
+        password: "{{ users_password[i] | password_hash('sha512') }}"
+        shell: /bin/zsh
+      loop: "{{ custom_users }}"
+      loop_control:
+        index_var: i
+      become: yes
+
+    - name: Make sure we have a 'wheel' group
+      group:
+        name: wheel
+        state: present
+      become: yes
+
+    - name: Allow 'wheel' group to have passwordless sudo
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: "^%wheel"
+        line: "%wheel ALL=(ALL) NOPASSWD: ALL"
+        validate: "visudo -cf %s"
+      become: yes
+
+    - name: Add custom users to wheel group
+      user:
+        name: "{{ item }}"
+        groups: wheel
+        append: yes
+        state: present
+        createhome: yes
+      loop: "{{ custom_users }}"
+      become: yes
+
+    - name: Add alarm user to wheel group
+      user:
+        name: alarm
+        groups: wheel
+        append: yes
+        state: present
+      become: yes
+
+    - name: Add dotfiles role
+      include_role:
+        name: "{{ ANSIBLE_ROLES }}/dotfiles"
+      vars:
+        dir_owner: "{{ custom_users[0] }}"
+        dir_group: wheel
+        dir_mode: 0755
+        non_root_users: "{{ custom_users }}"
+
+    - name: Ensure cron service is started & enabled
+      service:
+        name: cronie
+        enabled: true
+        state: started
+      become: yes
+
+    - name: Update /etc/crontab file with cronjobs in values
+      lineinfile:
+        path: /etc/crontab
+        line: "{{ item }}"
+        create: yes
+      with_items: "{{ cronjobs }}"
+      become: yes
+
+    - name: Add pikaur role
+      include_role:
+        name: "{{ ANSIBLE_ROLES }}/pikaur"
+
+    - name: Add podman role
+      include_role:
+        name: "{{ ANSIBLE_ROLES }}/podman"
+      vars:
+        PODMAN_DEFAULT_RUNTIME: "runc"
+
+    - name: Download telegraf.conf
+      get_url:
+        url: https://gist.githubusercontent.com/jjaniec/d0df00cdfa84558c89d36e13c272f1b4/raw/142a8d4f7fbaa6619967d793ad5da4dcbedbcf79/telegraf.conf
+        dest: /etc/telegraf.conf
+        mode: '0755'
+      become: yes
+
+    - name: Add telegraf-container role
+      include_role:
+        name: "{{ ANSIBLE_ROLES }}/telegraf-container"
+      vars:
+        INFLUX_TOKEN: "{{ influxdbcloud_token }}"
+        INFLUX_BUCKET: "{{ influxdbcloud_bucket }}"
+        INFLUX_ORGANIZATION: "{{ influxdbcloud_organization }}"
+        TELEGRAF_CONFIG_PATH: "/etc/telegraf.conf"
+        METHOD: "podman"
+
+# - hosts: k3s-masters
+#   vars_files:
+#     - vars/main.yml
+#     - vars/k3s.yml
+#   tasks:
+#     - name: Include kubectl role
+#       include_role:
+#         name: "{{ ANSIBLE_ROLES }}/kubectl"
+#       vars:
+#         kubectl_arch: "arm"
+#   roles:
+#     - { role: "{{ ANSIBLE_ROLES }}/k3s/server" }
+
+# - hosts: k3s-workers
+#   vars_files:
+#     - vars/main.yml
+#     - vars/k3s.yml
+#   tasks:
+#     - name: Add k3s-agent role to workers
+#       include_role:
+#         name: "{{ ANSIBLE_ROLES }}/k3s/agent"
+#       vars:
+#         K3S_SERVER: "{{ hostvars[groups['k3s-masters'][0]].ansible_default_ipv4.address }}"
+#         K3S_TOKEN: "{{ hostvars[groups['k3s-masters'][0]]['k3s_master_token']['content'] | b64decode }}"

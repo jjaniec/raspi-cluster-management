@@ -1,0 +1,12 @@
+[k3s-masters]
+rpi4 ansible_ssh_host=1.2.3.4 ansible_ssh_port=22
+
+[k3s-workers]
+rpi3 ansible_ssh_host=1.2.3.4 ansible_ssh_port=23
+
+[all:vars]
+ansible_connection=ssh
+ansible_ssh_pass=password
+ansible_user=user
+ansible_become_password=password
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'

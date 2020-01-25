@@ -1,0 +1,4 @@
+---
+influxdbcloud_token: "token"
+influxdbcloud_bucket: "bucket"
+influxdbcloud_organization: "organization"

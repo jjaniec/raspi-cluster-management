@@ -1,6 +1,0 @@
-192.168.1.x
-
-[all:vars]
-ansible_password=alarm
-ansible_user=alarm
-ansible_become_password=alarm

@@ -1,0 +1,25 @@
+---
+custom_users:
+  - user
+
+users_password:
+  - password
+
+packages:
+  - base-devel
+  - sudo
+  - git
+  - zsh
+  - tmux
+  - wget
+  - nano
+  - vim
+  - htop
+  - cronie
+  - glances
+
+cronjobs:
+  - "0 0 * * * pacman -Syyu --noconfirm > /tmp/pacman.log 2>&1"
+  - "0 0 * * * podman pull telegraf"
+  - "0 0 * * * podman container rm --all --force --volumes > /tmp/podman_purge.log 2>&1"
+  - "0 * * * * find /var/tmp -daystart -maxdepth 1 -mmin +59 -name \"storage*\" | tee /tmp/volume_purge.log | xargs rm -rf {}"
